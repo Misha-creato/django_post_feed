@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лента постов</title>
+    <!-- Подключение стилей Bootstrap -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <!-- Ссылка на главную страницу слева -->
+        <a class="navbar-brand" href="#">Главная</a>
+
+        <!-- Кнопка для мобильного меню -->
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown"
+                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Меню слева -->
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav mr-auto">
+                <!-- Дополнительные ссылки на другие страницы -->
+                <!-- <li class="nav-item">
+                  <a class="nav-link" href="#">О нас</a>
+                </li> -->
+                <!-- ... -->
+            </ul>
+
+            <!-- Меню справа -->
+            <ul class="navbar-nav">
+                <!-- Dropdown меню для профиля -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Профиль
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <a class="dropdown-item" href="#">Настройки</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#">Выход</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<div class="container mt-5">
+    <h1 class="mb-4">Лента постов</h1>
+
+    <!-- Посты -->
+    <div class="row">
+
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Заголовок поста 1</h5>
+                    <img src="post_image1.jpg" class="card-img-top" alt="Изображение поста">
+                    <p class="card-text" id="post1Text">
+                        Краткое описание поста 1, которое может быть слишком длинным и поэтому будет обрезано, чтобы не
+                        занимать слишком много места.
+                        <span class="collapse" id="collapsePost1">
+              Полное описание поста 1, которое отображается при нажатии на "Читать дальше".
+            </span>
+                        <a href="#collapsePost1" class="btn btn-link" data-toggle="collapse" aria-expanded="false"
+                           aria-controls="collapsePost1">Читать дальше</a>
+                    </p>
+                    <a href="author_profile.html" class="btn btn-primary">Автор поста</a>
+                    <button class="btn btn-info edit-btn" data-toggle="modal" data-target="#editModal1">Редактировать
+                    </button>
+                    <button class="btn btn-danger delete-btn">Удалить</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal fade" id="editModal1" tabindex="-1" role="dialog" aria-labelledby="editModalLabel1"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel1">Редактировать пост</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Форма редактирования поста -->
+                <form>
+                    <div class="form-group">
+                        <label for="editPostTitle1">Заголовок</label>
+                        <input type="text" class="form-control" id="editPostTitle1" value="Заголовок поста 1">
+                    </div>
+                    <div class="form-group">
+                        <label for="editPostDescription1">Описание</label>
+                        <textarea class="form-control" id="editPostDescription1"
+                                  rows="3">Краткое описание поста 1</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Модальное окно для подтверждения удаления поста -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Подтверждение удаления</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Вы уверены, что хотите удалить этот пост?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Подключение скриптов Bootstrap -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('.edit-btn').click(function() {
+    var postId = $(this).data('postId');
+    var postText = $('#post' + postId + 'Text').text();
+    var postDescription = postText.substring(0, 100); // Ограничиваем описание первыми 100 символами
+    $('#editPostDescription' + postId).val(postDescription);
+  });
+
+  $('.delete-btn').click(function() {
+    var postId = $(this).data('postId');
+    $('#confirmDeleteBtn').data('postId', postId); // Устанавливаем postId в атрибуте data-confirm-post-id для кнопки подтверждения удаления
+    $('#deleteModal').modal('show'); // Показываем модальное окно для подтверждения удаления
+  });
+
+  $('#confirmDeleteBtn').click(function() {
+    var postId = $(this).data('postId');
+    // Здесь можно добавить логику удаления поста
+    $('#deleteModal').modal('hide'); // Скрываем модальное окно после удаления
+  });
+});
+</script>
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
+
+
+<!--{% extends 'base.html' %}-->
+
+<!--{% block content %}-->
+
+
+<!--{% endblock %}-->
+
+

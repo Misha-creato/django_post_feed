@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <form method="post" class="login-form">
+                {% csrf_token %}
+                <h2 class="text-center">Авторизация</h2>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Адрес электронной почты</label>
+                    <input type="text" class="form-control" id="email" name="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Пароль</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <div class="mb-3 text-center">
+                    <button type="submit" class="btn btn-primary">Войти</button>
+                </div>
+                <div class="text-center">
+                    Все еще нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a>
+                </div>
+                <div class="text-center">
+                    Забыли пароль? <a href="{% url 'password_reset_request' %}">Восстановить</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

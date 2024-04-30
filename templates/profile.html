@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ user_profile.username }}</h5>
+                    <p class="card-text">{{ user_profile.profile_description }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-6 offset-md-3">
+            <h3>Посты пользователя</h3>
+            <!--      {% for post in user.posts %}-->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Title</h5>
+                    <p class="card-text">Description</p>
+                    <a href="#" class="btn btn-primary">Подробнее</a>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Title</h5>
+                    <p class="card-text">Description</p>
+                    <a href="#" class="btn btn-primary">Подробнее</a>
+                </div>
+            </div>
+            <!--      {% endfor %}-->
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+
