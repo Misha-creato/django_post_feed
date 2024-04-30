@@ -13,7 +13,7 @@ venv*/
 local_settings.py
 
 # Media
-media/
+#media/
 
 # Static files
 staticfiles/
