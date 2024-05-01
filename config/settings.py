@@ -11,7 +11,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
 import sys
+
 from pathlib import Path
+
+from django.contrib import messages
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -47,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'users',
+    'posts',
 ]
 
 MIDDLEWARE = [
@@ -173,3 +178,13 @@ EMAIL_PORT = os.environ.get(
     'EMAIL_PORT', 587
 )
 EMAIL_USE_TLS = True
+
+
+# Messages settings
+MESSAGE_TAGS = {
+    messages.DEBUG: 'info',
+    messages.INFO: 'info',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.ERROR: 'danger',
+}
