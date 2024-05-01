@@ -1,7 +1,5 @@
-from django.contrib import messages
 from django.contrib.auth import (
     logout,
-    update_session_auth_hash,
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import (
@@ -22,10 +20,13 @@ from users.forms import (
     PasswordResetRequestForm,
 )
 from users.services import (
-    create_and_return_user,
-    is_user_logged_in,
-    set_form_error_messages,
-    send_mail_to_user,
+    register_user,
+    login_user,
+    confirm_email,
+    settings_user,
+    password_reset_request,
+    password_reset_get,
+    password_reset_post,
 )
 
 
@@ -38,25 +39,15 @@ class RegisterView(View):
 
     def post(self, request, *args, **kwargs):
         data = request.POST
-        form = CustomUserCreationForm(data)
-        if form.is_valid():
-            user = create_and_return_user(
-                request=request,
-                data=data,
-            )
-            if user is not None:
-                send_mail_to_user(
-                    request=request,
-                    user=user,
-                    action='confirm_email',
-                )
-            return redirect('login')
-        set_form_error_messages(
+        status = register_user(
             request=request,
-            form=form,
+            data=data,
+            form=CustomUserCreationForm,
         )
+        if status == 200:
+            return redirect('login')
         return render(
-            status=400,
+            status=status,
             request=request,
             template_name='register.html',
         )
@@ -71,21 +62,13 @@ class LoginView(View):
 
     def post(self, request, *args, **kwargs):
         data = request.POST
-        form = LoginForm(data)
-        if form.is_valid():
-            if is_user_logged_in(request=request, data=data):
-                return redirect('index')
-            messages.error(
-                request=request,
-                message='Неправильные адрес электронной почты или пароль',
-            )
-            status = 401
-        else:
-            set_form_error_messages(
-                request=request,
-                form=form,
-            )
-            status = 400
+        status = login_user(
+            request=request,
+            data=data,
+            form=LoginForm,
+        )
+        if status == 200:
+            return redirect('index')
         return render(
             status=status,
             request=request,
@@ -101,21 +84,11 @@ class LogoutView(LoginRequiredMixin, View):
 
 class EmailConfirmView(View):
     def get(self, request, url_hash):
-        user = CustomUser.objects.filter(url_hash=url_hash)
-        if user.exists():
-            user = user.first()
-            user.email_confirmed = True
-            user.url_hash = None
-            user.save()
-            messages.success(
-                request=request,
-                message='Адрес электронной почты успешно подтвержден',
-            )
-        else:
-            messages.error(
-                request=request,
-                message='Неверный токен',
-            )
+        user = CustomUser.objects.filter(url_hash=url_hash).first()
+        confirm_email(
+            request=request,
+            user=user,
+        )
         return redirect('index')
 
 
@@ -128,24 +101,13 @@ class SettingsView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         user = request.user
-        form = PasswordChangeForm(user, request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(
-                request=request,
-                message='Пароль успешно изменен',
-            )
-            update_session_auth_hash(
-                request=request,
-                user=user,
-            )
-            status = 200
-        else:
-            set_form_error_messages(
-                request=request,
-                form=form,
-            )
-            status = 400
+        data = request.POST
+        status = settings_user(
+            request=request,
+            data=data,
+            user=user,
+            form=PasswordChangeForm,
+        )
         return render(
             status=status,
             request=request,
@@ -161,35 +123,12 @@ class PasswordResetRequestView(View):
         )
 
     def post(self, request, *args, **kwargs):
-        form = PasswordResetRequestForm(request.POST)
-        form_sent = False
-        status = 400
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            user = CustomUser.objects.filter(email=email)
-            if user.exists():
-                user = user.first()
-                send_mail_to_user(
-                    request=request,
-                    user=user,
-                    action='password_reset',
-                )
-                messages.success(
-                    request=request,
-                    message='Письмо для сброса пароля отправлено. Проверьте свой почтовый ящик.',
-                )
-                form_sent = True
-                status = 200
-            else:
-                messages.error(
-                    request=request,
-                    message='Пользователь с таким адресом электронной почты не найден.',
-                )
-        else:
-            set_form_error_messages(
-                request=request,
-                form=form,
-            )
+        data = request.POST
+        status, form_sent = password_reset_request(
+            request=request,
+            data=data,
+            form=PasswordResetRequestForm,
+        )
         context = {
             'form_sent': form_sent,
         }
@@ -203,44 +142,39 @@ class PasswordResetRequestView(View):
 
 class PasswordResetView(View):
     def get(self, request, url_hash):
-        user = CustomUser.objects.filter(url_hash=url_hash)
-        if user.exists():
+        user = CustomUser.objects.filter(url_hash=url_hash).first()
+        status = password_reset_get(
+            request=request,
+            user=user,
+        )
+        if status == 200:
             return render(
                 request=request,
                 template_name='password_reset_form.html',
             )
-        messages.error(
-            request=request,
-            message='Неверный токен',
-        )
         return redirect('login')
 
     def post(self, request, url_hash, **kwargs):
         user = CustomUser.objects.filter(url_hash=url_hash).first()
-        form = SetPasswordForm(user, request.POST)
-        if form.is_valid():
-            form.user.url_hash = None
-            form.save()
-            messages.success(
-                request=request,
-                message='Пароль успешно изменен',
-            )
+        data = request.POST
+        status = password_reset_post(
+            request=request,
+            data=data,
+            user=user,
+            form=SetPasswordForm,
+        )
+        if status == 200:
             return redirect('login')
-        else:
-            set_form_error_messages(
-                request=request,
-                form=form,
-            )
         return render(
-            status=400,
+            status=status,
             request=request,
             template_name='password_reset_form.html',
         )
 
 
 class ProfileView(View):
-    def get(self, request, pk):
-        user_profile = CustomUser.objects.filter(id=pk)
+    def get(self, request, username):
+        user_profile = CustomUser.objects.filter(username=username).first()
         context = {
             'user_profile': user_profile,
         }
