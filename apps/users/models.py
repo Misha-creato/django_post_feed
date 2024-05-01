@@ -1,3 +1,6 @@
+import io
+from PIL import Image
+
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -6,9 +9,6 @@ from django.contrib.auth.models import (
 
 from django.db import models
 from django.core.files.uploadedfile import SimpleUploadedFile
-
-from PIL import Image
-import io
 
 
 class CustomUserManager(BaseUserManager):
@@ -94,7 +94,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
             old_avatar = CustomUser.objects.get(pk=self.pk).avatar
             if self.avatar != old_avatar:
                 self.__make_thumbnail()
-        super().save()
+        super().save(*args, **kwargs)
 
     def __make_thumbnail(self):
         with self.avatar as avatar_img:
