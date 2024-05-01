@@ -5,7 +5,7 @@ import uuid
 from django.contrib import messages
 from django.contrib.auth import (
     authenticate,
-    login,
+    login, update_session_auth_hash,
 )
 
 from django.core.mail import send_mail
@@ -91,3 +91,133 @@ def get_user_url_hash(user):
     user.url_hash = url_hash
     user.save()
     return url_hash
+
+
+def register_user(request, data, form) -> int:
+    form = form(data)
+    if form.is_valid():
+        user = create_and_return_user(
+            request=request,
+            data=data,
+        )
+        if user is not None:
+            send_mail_to_user(
+                request=request,
+                user=user,
+                action='confirm_email',
+            )
+        return 200
+    set_form_error_messages(
+        request=request,
+        form=form,
+    )
+    return 400
+
+
+def login_user(request, data, form) -> int:
+    form = form(data)
+    if form.is_valid():
+        if is_user_logged_in(request=request, data=data):
+            return 200
+        messages.error(
+            request=request,
+            message='Неправильные адрес электронной почты или пароль',
+        )
+        return 401
+    set_form_error_messages(
+        request=request,
+        form=form,
+    )
+    return 400
+
+
+def confirm_email(request, user):
+    if user is not None:
+        user.email_confirmed = True
+        user.url_hash = None
+        user.save()
+        messages.success(
+            request=request,
+            message='Адрес электронной почты успешно подтвержден',
+        )
+    else:
+        messages.error(
+            request=request,
+            message='Неверный токен',
+        )
+
+
+def settings_user(request, data, user, form) -> int:
+    form = form(user, data)
+    if form.is_valid():
+        form.save()
+        messages.success(
+            request=request,
+            message='Пароль успешно изменен',
+        )
+        update_session_auth_hash(
+            request=request,
+            user=user,
+        )
+        return 200
+    set_form_error_messages(
+        request=request,
+        form=form,
+    )
+    return 400
+
+
+def password_reset_request(request, data, form) -> (int, bool):
+    form = form(data)
+    if form.is_valid():
+        email = form.cleaned_data['email']
+        user = CustomUser.objects.filter(email=email).first()
+        if user is not None:
+            send_mail_to_user(
+                request=request,
+                user=user,
+                action='password_reset',
+            )
+            messages.success(
+                request=request,
+                message='Письмо для сброса пароля отправлено. '
+                        'Проверьте свой почтовый ящик.',
+            )
+            return 200, True
+        set_form_error_messages(
+            request=request,
+            form=form,
+        )
+    else:
+        set_form_error_messages(
+            request=request,
+            form=form,
+        )
+    return 400, False
+
+
+def password_reset_get(request, user) -> int:
+    if user is not None:
+        return 200
+    messages.error(
+        request=request,
+        message='Неверный токен',
+    )
+    return 400
+
+
+def password_reset_post(request, data, user, form):
+    form = form(user, data)
+    if form.is_valid():
+        form.user.url_hash = None
+        form.save()
+        messages.success(
+            request=request,
+            message='Пароль успешно изменен',
+        )
+        return 200
+    set_form_error_messages(
+        request=request,
+        form=form,
+    )
+    return 400
