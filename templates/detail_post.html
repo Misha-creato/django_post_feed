@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">{{ post.title }}</h5>
+          {% if post.image %}
+          <img src="{{ post.image.url }}" class="card-img-top" alt="Изображение поста">
+          {% endif %}
+          <p class="card-text">{{ post.description }}</p>
+          <a href="{% url 'profile' post.user.username %}">
+            <p class="card-text">
+              <img src="{{ post.user.thumbnail.url }}">
+              {{ post.user.username }}
+            </p>
+          </a>
+          <button class="btn btn-primary edit-btn">Редактировать</button>
+          <button class="btn btn-danger delete-btn">Удалить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}

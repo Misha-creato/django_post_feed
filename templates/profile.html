@@ -6,32 +6,29 @@
     <div class="row">
         <div class="col-md-6 offset-md-3">
             <div class="card">
-                <div class="card-body">
+                <div class="card-body text-center">
+                    <img src="{{user_profile.thumbnail.url}}">
                     <h5 class="card-title">{{ user_profile.username }}</h5>
+                    {% if user_profile.profile_description %}
                     <p class="card-text">{{ user_profile.profile_description }}</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
     <div class="row mt-4">
         <div class="col-md-6 offset-md-3">
-            <h3>Посты пользователя</h3>
-            <!--      {% for post in user.posts %}-->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Title</h5>
-                    <p class="card-text">Description</p>
-                    <a href="#" class="btn btn-primary">Подробнее</a>
-                </div>
-            </div>
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Title</h5>
-                    <p class="card-text">Description</p>
-                    <a href="#" class="btn btn-primary">Подробнее</a>
-                </div>
-            </div>
-            <!--      {% endfor %}-->
+            {% if user_profile.posts %}
+                  {% for post in user_profile.posts.all %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ post.title }}</h5>
+                            <p class="card-text">{{ post.description }}</p>
+                            <a href="{% url 'detail_post' post.pk %}" class="btn btn-primary">Подробнее</a>
+                        </div>
+                    </div>
+                  {% endfor %}
+            {% endif %}
         </div>
     </div>
 </div>
