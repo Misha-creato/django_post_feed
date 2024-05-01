@@ -48,7 +48,7 @@ urlpatterns = [
         name='password_reset',
     ),
     path(
-        'profile/<int:pk>',
+        'profile/<str:username>',
         ProfileView.as_view(),
         name='profile',
     )
