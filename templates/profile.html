@@ -24,7 +24,7 @@
                         <div class="card-body">
                             <h5 class="card-title">{{ post.title }}</h5>
                             <p class="card-text">{{ post.description }}</p>
-                            <a href="{% url 'detail_post' post.pk %}" class="btn btn-primary">Подробнее</a>
+                            <a href="{% url 'detail_post' post.slug %}" class="btn btn-primary">Подробнее</a>
                         </div>
                     </div>
                   {% endfor %}
