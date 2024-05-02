@@ -1,6 +1,11 @@
 
 
 def post_data(data) -> bool:
-    if data.get('title'):
-        return True
+    keys = (
+        'title',
+    )
+
+    for key in keys:
+        if data.get(key):
+            return True
     return False
