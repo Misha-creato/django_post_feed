@@ -2,10 +2,6 @@ from django.contrib.auth import (
     logout,
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.forms import (
-    PasswordChangeForm,
-    SetPasswordForm,
-)
 
 from django.views import View
 from django.shortcuts import (
@@ -14,11 +10,7 @@ from django.shortcuts import (
 )
 
 from users.models import CustomUser
-from users.forms import (
-    CustomUserCreationForm,
-    LoginForm,
-    PasswordResetRequestForm,
-)
+
 from users.services import (
     register_user,
     login_user,
@@ -38,11 +30,8 @@ class RegisterView(View):
         )
 
     def post(self, request, *args, **kwargs):
-        data = request.POST
         status = register_user(
             request=request,
-            data=data,
-            form=CustomUserCreationForm,
         )
         if status == 200:
             return redirect('login')
@@ -61,11 +50,8 @@ class LoginView(View):
         )
 
     def post(self, request, *args, **kwargs):
-        data = request.POST
         status = login_user(
             request=request,
-            data=data,
-            form=LoginForm,
         )
         if status == 200:
             return redirect('index')
@@ -100,13 +86,8 @@ class SettingsView(LoginRequiredMixin, View):
         )
 
     def post(self, request, *args, **kwargs):
-        user = request.user
-        data = request.POST
         status = settings_user(
             request=request,
-            data=data,
-            user=user,
-            form=PasswordChangeForm,
         )
         return render(
             status=status,
@@ -123,20 +104,13 @@ class PasswordResetRequestView(View):
         )
 
     def post(self, request, *args, **kwargs):
-        data = request.POST
-        status, form_sent = password_reset_request(
+        status = password_reset_request(
             request=request,
-            data=data,
-            form=PasswordResetRequestForm,
         )
-        context = {
-            'form_sent': form_sent,
-        }
         return render(
             status=status,
             request=request,
             template_name='password_reset.html',
-            context=context,
         )
 
 
@@ -156,12 +130,9 @@ class PasswordResetView(View):
 
     def post(self, request, url_hash, **kwargs):
         user = CustomUser.objects.filter(url_hash=url_hash).first()
-        data = request.POST
         status = password_reset_post(
             request=request,
-            data=data,
             user=user,
-            form=SetPasswordForm,
         )
         if status == 200:
             return redirect('login')
