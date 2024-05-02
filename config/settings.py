@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 
     'users',
     'posts',
+    'index',
 ]
 
 MIDDLEWARE = [
@@ -188,3 +189,5 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'danger',
 }
+
+LOGIN_URL = 'login'
