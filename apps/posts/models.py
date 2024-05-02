@@ -1,5 +1,8 @@
+import hashlib
+
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils.text import slugify
 
 
 User = get_user_model()
@@ -30,6 +33,18 @@ class Post(models.Model):
         auto_now_add=True,
         verbose_name='Дата создания',
     )
+    slug = models.SlugField(
+        unique=True,
+        verbose_name='URL',
+    )
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            slug_title = slugify(self.title)
+            hash_id = hashlib.sha256(str(self.id).encode()).hexdigest()[:12]
+            self.slug = f'{slug_title}#{hash_id}'
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
