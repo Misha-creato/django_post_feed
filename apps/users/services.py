@@ -5,11 +5,16 @@ import uuid
 from django.contrib import messages
 from django.contrib.auth import (
     authenticate,
-    login, update_session_auth_hash,
+    login,
+    update_session_auth_hash,
 )
 
 from django.core.mail import send_mail
 from django.urls import reverse
+from django.contrib.auth.forms import (
+    PasswordChangeForm,
+    SetPasswordForm,
+)
 
 from config.settings import (
     EMAIL_HOST_USER,
@@ -17,12 +22,17 @@ from config.settings import (
 )
 
 from users.models import CustomUser
+from users.forms import (
+    CustomUserCreationForm,
+    LoginForm,
+    PasswordResetRequestForm,
+)
 
 
 CUR_DIR = os.path.dirname(__file__)
 
 
-def create_and_return_user(request, data):
+def create_and_return_user(request, data) -> (int, CustomUser):
     try:
         user = CustomUser.objects.create_user(
             email=data['email'],
@@ -33,14 +43,14 @@ def create_and_return_user(request, data):
             request=request,
             message='Вы успешно зарегистрировались'
         )
-        return user
+        return 200, user
     except Exception as exc:
         print(f'Не удалось создать пользователя {exc}')
         messages.error(
             request=request,
             message='Возникла ошибка при создании пользователя, пожалуйста, попробуйте позже'
         )
-        return None
+        return 500, None
 
 
 def send_mail_to_user(request, user, action):
@@ -62,7 +72,7 @@ def send_mail_to_user(request, user, action):
         print('Отправка писем отключена')
 
 
-def is_user_logged_in(request, data):
+def is_user_logged_in(request, data) -> int:
     user = authenticate(
         request=request,
         username=data['email'],
@@ -73,8 +83,12 @@ def is_user_logged_in(request, data):
             request=request,
             user=user,
         )
-        return True
-    return False
+        return 200
+    messages.error(
+        request=request,
+        message='Неправильные адрес электронной почты или пароль',
+    )
+    return 401
 
 
 def set_form_error_messages(request, form):
@@ -93,20 +107,21 @@ def get_user_url_hash(user):
     return url_hash
 
 
-def register_user(request, data, form) -> int:
-    form = form(data)
+def register_user(request) -> int:
+    data = request.POST
+    form = CustomUserCreationForm(data)
     if form.is_valid():
-        user = create_and_return_user(
+        status, user = create_and_return_user(
             request=request,
             data=data,
         )
-        if user is not None:
+        if status == 200:
             send_mail_to_user(
                 request=request,
                 user=user,
                 action='confirm_email',
             )
-        return 200
+        return status
     set_form_error_messages(
         request=request,
         form=form,
@@ -114,16 +129,11 @@ def register_user(request, data, form) -> int:
     return 400
 
 
-def login_user(request, data, form) -> int:
-    form = form(data)
+def login_user(request) -> int:
+    data = request.POST
+    form = LoginForm(data)
     if form.is_valid():
-        if is_user_logged_in(request=request, data=data):
-            return 200
-        messages.error(
-            request=request,
-            message='Неправильные адрес электронной почты или пароль',
-        )
-        return 401
+        return is_user_logged_in(request=request, data=data)
     set_form_error_messages(
         request=request,
         form=form,
@@ -147,8 +157,10 @@ def confirm_email(request, user):
         )
 
 
-def settings_user(request, data, user, form) -> int:
-    form = form(user, data)
+def settings_user(request) -> int:
+    user = request.user
+    data = request.POST
+    form = PasswordChangeForm(user, data)
     if form.is_valid():
         form.save()
         messages.success(
@@ -167,8 +179,9 @@ def settings_user(request, data, user, form) -> int:
     return 400
 
 
-def password_reset_request(request, data, form) -> (int, bool):
-    form = form(data)
+def password_reset_request(request) -> int:
+    data = request.POST
+    form = PasswordResetRequestForm(data)
     if form.is_valid():
         email = form.cleaned_data['email']
         user = CustomUser.objects.filter(email=email).first()
@@ -183,7 +196,7 @@ def password_reset_request(request, data, form) -> (int, bool):
                 message='Письмо для сброса пароля отправлено. '
                         'Проверьте свой почтовый ящик.',
             )
-            return 200, True
+            return 200
         set_form_error_messages(
             request=request,
             form=form,
@@ -193,7 +206,7 @@ def password_reset_request(request, data, form) -> (int, bool):
             request=request,
             form=form,
         )
-    return 400, False
+    return 400
 
 
 def password_reset_get(request, user) -> int:
@@ -206,8 +219,9 @@ def password_reset_get(request, user) -> int:
     return 400
 
 
-def password_reset_post(request, data, user, form):
-    form = form(user, data)
+def password_reset_post(request, user):
+    data = request.POST
+    form = SetPasswordForm(user, data)
     if form.is_valid():
         form.user.url_hash = None
         form.save()
