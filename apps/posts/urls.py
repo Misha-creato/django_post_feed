@@ -3,6 +3,8 @@ from django.urls import path
 from posts.views import (
     CreatePostView,
     DetailPostView,
+    UpdatePostView,
+    DeletePostView,
 )
 
 urlpatterns = [
@@ -12,8 +14,18 @@ urlpatterns = [
         name='create_post',
     ),
     path(
-        '<int:pk>/',
+        '<str:slug>/',
         DetailPostView.as_view(),
         name='detail_post',
+    ),
+    path(
+        'update/<str:slug>/',
+        UpdatePostView.as_view(),
+        name='update_post',
+    ),
+    path(
+        'delete/<str:slug>/',
+        DeletePostView.as_view(),
+        name='delete_post',
     )
 ]
