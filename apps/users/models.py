@@ -79,6 +79,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         blank=True,
         verbose_name='Хэш',
     )
+    mail_sent = models.BooleanField(
+        default=False,
+        verbose_name='Письмо для подтверждения отправлено',
+    )
     date_joined = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата регистрации',
@@ -97,8 +101,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         super().save(*args, **kwargs)
 
     def __make_thumbnail(self):
-        with self.avatar as avatar_img:
-            img = Image.open(avatar_img)
+        with Image.open(self.avatar) as img:
 
             if img.mode in ('RGBA', 'LA'):
                 img = img.convert('RGB')
