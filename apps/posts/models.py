@@ -39,10 +39,9 @@ class Post(models.Model):
     )
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            slug_title = slugify(self.title)
-            hash_id = hashlib.sha256(str(self.id).encode()).hexdigest()[:12]
-            self.slug = f'{slug_title}#{hash_id}'
+        slug_title = slugify(self.title)
+        hash_id = hashlib.sha256(str(self.id).encode()).hexdigest()[:12]
+        self.slug = f'{slug_title}#{hash_id}'
 
         super().save(*args, **kwargs)
 
