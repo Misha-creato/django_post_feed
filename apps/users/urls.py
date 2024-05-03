@@ -9,7 +9,9 @@ from users.views import (
     PasswordResetRequestView,
     PasswordResetView,
     ProfileView,
+    SendMailRequestView, SearchView,
 )
+
 
 urlpatterns = [
     path(
@@ -48,9 +50,19 @@ urlpatterns = [
         name='password_reset',
     ),
     path(
-        'profile/<str:username>',
+        'profile/<str:username>/',
         ProfileView.as_view(),
         name='profile',
-    )
+    ),
+    path(
+        'send_mail/',
+        SendMailRequestView.as_view(),
+        name='send_mail',
+    ),
+    path(
+        'search/',
+        SearchView.as_view(),
+        name='search',
+    ),
 ]
 
