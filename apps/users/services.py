@@ -8,19 +8,21 @@ from django.contrib.auth import (
     login,
     update_session_auth_hash,
 )
-
-from django.core.mail import send_mail
-from django.urls import reverse
 from django.contrib.auth.forms import (
     PasswordChangeForm,
     SetPasswordForm,
 )
+
+from django.core.mail import send_mail
+from django.urls import reverse
+from django.db.utils import IntegrityError
 
 from config.settings import (
     EMAIL_HOST_USER,
     SEND_EMAILS,
 )
 
+from users import check
 from users.models import CustomUser
 from users.forms import (
     CustomUserCreationForm,
@@ -66,8 +68,18 @@ def send_mail_to_user(request, user, action):
     if SEND_EMAILS:
         try:
             send_mail(subject, message, EMAIL_HOST_USER, [user.email])
+            messages.success(
+                request=request,
+                message=data['send_success'],
+            )
+            user.mail_sent = True
+            user.save()
         except Exception as exc:
-            print('Произошла ошибка при отправке пользователя')
+            print(f'Произошла ошибка при отправке письма пользователю {exc}')
+            messages.warning(
+                request=request,
+                message=data['send_failed'],
+            )
     else:
         print('Отправка писем отключена')
 
@@ -110,39 +122,54 @@ def get_user_url_hash(user):
 def register_user(request) -> int:
     data = request.POST
     form = CustomUserCreationForm(data)
-    if form.is_valid():
-        status, user = create_and_return_user(
+    if not form.is_valid():
+        set_form_error_messages(
             request=request,
-            data=data,
+            form=form,
         )
-        if status == 200:
-            send_mail_to_user(
-                request=request,
-                user=user,
-                action='confirm_email',
-            )
-        return status
-    set_form_error_messages(
+        return 400
+    status, user = create_and_return_user(
         request=request,
-        form=form,
+        data=data,
     )
-    return 400
+    if status == 200:
+        send_mail_to_user(
+            request=request,
+            user=user,
+            action='confirm_email',
+        )
+    return status
 
 
 def login_user(request) -> int:
     data = request.POST
     form = LoginForm(data)
-    if form.is_valid():
-        return is_user_logged_in(request=request, data=data)
-    set_form_error_messages(
-        request=request,
-        form=form,
-    )
-    return 400
+    if not form.is_valid():
+        set_form_error_messages(
+            request=request,
+            form=form,
+        )
+        return 400
+    return is_user_logged_in(request=request, data=data)
 
 
-def confirm_email(request, user):
-    if user is not None:
+def confirm_email(request, url_hash) -> int:
+    try:
+        user = CustomUser.objects.filter(url_hash=url_hash).first()
+    except Exception as exc:
+        print(exc)
+        messages.error(
+            request=request,
+            message='Возникла ошибка на стороне сервера',
+        )
+        return 500
+    else:
+        if user is None:
+            messages.error(
+                request=request,
+                message='Неверный токен',
+            )
+            return 404
         user.email_confirmed = True
         user.url_hash = None
         user.save()
@@ -150,88 +177,175 @@ def confirm_email(request, user):
             request=request,
             message='Адрес электронной почты успешно подтвержден',
         )
-    else:
-        messages.error(
-            request=request,
-            message='Неверный токен',
-        )
+        return 200
 
 
 def settings_user(request) -> int:
     user = request.user
     data = request.POST
     form = PasswordChangeForm(user, data)
-    if form.is_valid():
-        form.save()
-        messages.success(
+    if not form.is_valid():
+        set_form_error_messages(
             request=request,
-            message='Пароль успешно изменен',
+            form=form,
         )
-        update_session_auth_hash(
-            request=request,
-            user=user,
-        )
-        return 200
-    set_form_error_messages(
+        return 400
+    form.save()
+    messages.success(
         request=request,
-        form=form,
+        message='Пароль успешно изменен',
     )
-    return 400
+    update_session_auth_hash(
+        request=request,
+        user=user,
+    )
+    return 200
 
 
 def password_reset_request(request) -> int:
     data = request.POST
     form = PasswordResetRequestForm(data)
-    if form.is_valid():
-        email = form.cleaned_data['email']
+    if not form.is_valid():
+        set_form_error_messages(
+            request=request,
+            form=form,
+        )
+        return 400
+    email = form.cleaned_data['email']
+    try:
         user = CustomUser.objects.filter(email=email).first()
-        if user is not None:
-            send_mail_to_user(
-                request=request,
-                user=user,
-                action='password_reset',
-            )
-            messages.success(
-                request=request,
-                message='Письмо для сброса пароля отправлено. '
-                        'Проверьте свой почтовый ящик.',
-            )
-            return 200
-        set_form_error_messages(
+    except Exception as exc:
+        print(exc)
+        messages.error(
             request=request,
-            form=form,
+            message='Возникла ошибка на стороне сервера',
         )
+        return 500
     else:
-        set_form_error_messages(
+        if user is None:
+            messages.error(
+                request=request,
+                message=f'Пользователь с адресом электронной почты {email} не найден',
+            )
+            return 404
+        send_mail_to_user(
             request=request,
-            form=form,
+            user=user,
+            action='password_reset',
         )
-    return 400
-
-
-def password_reset_get(request, user) -> int:
-    if user is not None:
         return 200
-    messages.error(
-        request=request,
-        message='Неверный токен',
-    )
-    return 400
 
 
-def password_reset_post(request, user):
+def password_reset_get(request, url_hash) -> int:
+    try:
+        user = CustomUser.objects.filter(url_hash=url_hash).first()
+    except Exception as exc:
+        print(exc)
+        messages.error(
+            request=request,
+            message='Возникла ошибка на стороне сервера',
+        )
+        return 500
+    if user is None:
+        messages.error(
+            request=request,
+            message='Неверный токен',
+        )
+        return 404
+    return 200
+
+
+def password_reset_post(request, url_hash):
+    try:
+        user = CustomUser.objects.filter(url_hash=url_hash).first()
+    except Exception as exc:
+        print(exc)
+        messages.error(
+            request=request,
+            message='Возникла ошибка на стороне сервера',
+        )
+        return 500
+    if user is None:
+        messages.error(
+            request=request,
+            message='Неверный токен',
+        )
+        return 404
     data = request.POST
     form = SetPasswordForm(user, data)
-    if form.is_valid():
-        form.user.url_hash = None
-        form.save()
+    if not form.is_valid():
+        set_form_error_messages(
+            request=request,
+            form=form,
+        )
+        return 400
+    form.user.url_hash = None
+    form.save()
+    messages.success(
+        request=request,
+        message='Пароль успешно изменен',
+    )
+    return 200
+
+
+def get_user(request, username) -> (int, CustomUser):
+    try:
+        user = (CustomUser.objects.filter(username=username).
+                prefetch_related('posts').first())
+    except Exception as exc:
+        print(f'Возникла ошибка на стороне сервера {exc}')
+        return 500, None
+    if user is None:
+        messages.error(
+            request=request,
+            message=f'Пользователь с логином {username} не найден',
+        )
+        return 404, None
+    return 200, user
+
+
+def profile_post(request, username) -> (int, CustomUser):
+    status, user = get_user(
+        request=request,
+        username=username,
+    )
+    if status != 200:
+        return status
+    data = request.POST
+    files = request.FILES
+    if not check.profile_data(data=data):
+        messages.error(
+            request=request,
+            message='Логин является обязательным полем',
+        )
+        return 400
+    try:
+        user.avatar = files.get('avatar', user.avatar)
+        user.username = data.get('username', user.username)
+        user.profile_description = data.get('profile_description', user.profile_description)
+        user.save()
         messages.success(
             request=request,
-            message='Пароль успешно изменен',
+            message='Профиль успешно обновлен',
         )
         return 200
-    set_form_error_messages(
-        request=request,
-        form=form,
-    )
+    except IntegrityError as exc:
+        print(exc)
+        messages.error(
+            request=request,
+            message=f'Логин {data["username"]} уже существует',
+        )
+    except Exception as exc:
+        print(f'Возникла ошибка при обновлении профиля {exc}')
     return 400
+
+
+def search_users(request):
+    query = request.GET.get('search')
+    try:
+        users = CustomUser.objects.filter(username__icontains=query)
+        return users
+    except Exception as exc:
+        print(exc)
+        return None
+
