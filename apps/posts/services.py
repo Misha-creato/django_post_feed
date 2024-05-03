@@ -6,20 +6,22 @@ from posts.models import Post
 
 def update_or_create_post(request, action) -> (int, Post):
     data = request.POST
-    files = request.FILES
+    image = request.FILES.get('image')
     user = request.user
     if check.post_data(data=data):
-        print(f'Создание или обновление поста {data} {files}')
+        print(f'Создание или обновление поста {data}')
         try:
-            post, flag = Post.objects.update_or_create(
+            post = Post.objects.update_or_create(
                 slug=data.get('slug'),
                 defaults={
                     'user': user,
                     'title': data['title'],
                     'description': data['description'],
-                    'image': files.get('image'),
                 },
-            )
+            )[0]
+            if image:
+                post.image = image
+            post.save()
             messages.success(
                 request=request,
                 message=f'Пост успешно {action}',
@@ -39,8 +41,11 @@ def update_or_create_post(request, action) -> (int, Post):
     return 400, None
 
 
-def find_post(request, slug) -> (int, Post):
-    post = Post.objects.filter(slug=slug).first()
+def get_post(request, slug) -> (int, Post):
+    post = Post.objects.filter(
+        slug=slug,
+        user=request.user,
+    ).first()
     if post is not None:
         return 200, post
     messages.error(
