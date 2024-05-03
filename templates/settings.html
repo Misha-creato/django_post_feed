@@ -4,22 +4,11 @@
 
 
 {% block content %}
-{% if error_messages %}
-        <div class="alert alert-danger" role="alert">
-            {% for field, errors in error_messages %}
-            <p>{{ field }}:</p>
-            <ul>
-                {% for error in errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
-        {% endfor %}
 
-        </div>
-{% endif %}
     <div class="row">
+
         <div class="col-md-6 offset-md-3">
-            <form method="post" class="settings-form">
+            <form method="post" class="custom-form">
                 {% csrf_token %}
                 <h2 class="text-center">Настройки</h2>
                 <div class="mb-3">

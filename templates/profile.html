@@ -7,33 +7,133 @@
         <div class="col-md-6 offset-md-3">
             <div class="card">
                 <div class="card-body text-center">
-                    <img src="{{user_profile.thumbnail.url}}">
-                    <h5 class="card-title">{{ user_profile.username }}</h5>
-                    {% if user_profile.profile_description %}
-                    <p class="card-text">{{ user_profile.profile_description }}</p>
-                    {% endif %}
+                    <div class="avatar-container text-center">
+                        <i class="bi bi-eye"></i>
+                        {% if user == profile %}
+                        <i class="bi bi-camera" id="avatarEdit"></i>
+                        {% endif %}
+                        <img src="{{profile.thumbnail.url}}" class="avatar" style="width: 100px; height: 100px;">
+                    </div>
+                    <div class="text-container">
+                        <h5 class="card-title mt-3">{{ profile.username }}</h5>
+                        {% if user == profile %}
+                        <i class="bi bi-pencil" id="textEdit"></i>
+                        {% endif %}
+                        {% if profile.profile_description %}
+                        <p class="card-text">{{ profile.profile_description }}</p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     <div class="row mt-4">
-        <div class="col-md-6 offset-md-3">
-            {% if user_profile.posts %}
-                  {% for post in user_profile.posts.all %}
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ post.title }}</h5>
-                            <p class="card-text">{{ post.description }}</p>
-                            <a href="{% url 'detail_post' post.slug %}" class="btn btn-primary">Подробнее</a>
-                        </div>
+        {% if profile.posts %}
+        {% for post in profile.posts.all %}
+        <div class="col-md-8 offset-md-2 mb-5">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ post.title }}</h5>
+                    <div class="d-flex flex-row align-items-center justify-content-between mb-2">
+                        <a href="{% url 'profile' post.user.username %}">
+                            <div class="card-text d-flex flex-row align-items-center">
+                                <div class="avatar-container">
+                                    <img src="{{ post.user.thumbnail.url }}" style="width: 50px; height: 50px;">
+                                </div>
+                                <div class="px-2">{{ post.user.username }}</div>
+
+                            </div>
+                        </a>
+                        <div>{{post.created_at}}</div>
                     </div>
-                  {% endfor %}
-            {% endif %}
+                    {% if post.image %}
+                        <img src="{{ post.image.url }}" class="card-img-top" alt="Изображение поста">
+                    {% endif %}
+
+                    <p class="card-text mt-2">
+                        {% if post.description|length > 100 %}
+                            {{ post.description|slice:":100" }}
+                            <span class="collapse" id="collapsePost{{ forloop.counter }}">
+                                {{ post.description|slice:"100:" }}
+                            </span>
+                            <a href="#collapsePost{{ forloop.counter }}" class="btn-link" data-toggle="collapse" aria-expanded="false" aria-controls="collapsePost{{ forloop.counter }}">Далее</a>
+
+                        {% else %}
+                            {{ post.description }}
+                        {% endif %}
+                    </p>
+                    {% if user == post.user %}
+                        <div class="d-flex align-items-center justify-content-end">
+                            <a href="{% url 'update_post' post.slug %}">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn" id="deleteBtn"><i class="bi bi-trash"></i></button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+
+<div id="avatarModal" class="modal bd-example-modal-sm">
+    <span class="close"></span>
+    <div class="modal-dialog modal-sm">
+        <img class="modal-content" id="avatarModalImg">
+    </div>
+</div>
+
+<div id="avatarUpdateModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактирование аватара</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Форма для загрузки нового аватара -->
+                <form method="POST" action="{% url 'profile' user.username %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="file" name="avatar">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="textModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактирование профиля</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Форма для редактирования текста профиля -->
+                <form method="POST" action="{% url 'profile' user.username %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="username">Логин:</label>
+                        <input type="text" class="form-control" id="username" name="username"
+                               value="{{ user.username }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile_description">Описание:</label>
+                        <textarea class="form-control" id="profile_description" name="profile_description" rows="3">{{ user.profile_description }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
 
 {% endblock %}
+
 
 

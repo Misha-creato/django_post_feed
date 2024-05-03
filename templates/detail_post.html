@@ -3,24 +3,60 @@
 {% block content %}
 
 <div class="container mt-5">
-  <div class="row">
-    <div class="col-md-8 offset-md-2">
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">{{ post.title }}</h5>
-          {% if post.image %}
-          <img src="{{ post.image.url }}" class="card-img-top" alt="Изображение поста">
-          {% endif %}
-          <p class="card-text">{{ post.description }}</p>
-          <a href="{% url 'profile' post.user.username %}">
-            <p class="card-text">
-              <img src="{{ post.user.thumbnail.url }}">
-              {{ post.user.username }}
-            </p>
-          </a>
-          <button class="btn btn-primary edit-btn">Редактировать</button>
-          <button class="btn btn-danger delete-btn">Удалить</button>
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ post.title }}</h5>
+                    <div class="d-flex flex-row align-items-center justify-content-between mb-2">
+                        <a href="{% url 'profile' post.user.username %}">
+                            <div class="card-text d-flex flex-row align-items-center">
+                                <div class="avatar-container">
+                                    <img src="{{ post.user.thumbnail.url }}" style="width: 50px; height: 50px;">
+                                </div>
+                                <div class="px-2">{{ post.user.username }}</div>
+
+                            </div>
+                        </a>
+                        <div>{{post.created_at}}</div>
+                    </div>
+                    {% if post.image %}
+                        <img src="{{ post.image.url }}" class="card-img-top" alt="Изображение поста">
+                    {% endif %}
+                    <p class="card-text">{{ post.description }}</p>
+                    {% if user == post.user %}
+                        <div class="d-flex align-items-center justify-content-end">
+                            <a href="{% url 'update_post' post.slug %}">
+                            <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn" id="deleteBtn"><i class="bi bi-trash"></i></button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
+    </div>
+</div>
+
+<div class="modal" id="deleteModal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Подтверждение удаления</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Вы уверены, что хотите удалить этот пост?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+          <form action="{% url 'delete_post' post.slug %}">
+              {% csrf_token %}
+            <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
+
+          </form>
       </div>
     </div>
   </div>

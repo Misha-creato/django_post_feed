@@ -4,25 +4,36 @@
 
     <div class="row">
     {% for post in posts %}
-        <div class="col-md-12 mb-4">
+        <div class="col-md-8 offset-md-2 mb-5">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">{{post.title}}</h5>
-                    <div>
-                        <img src="{{post.user.thumbnail.url}}">
-                        <h5 class="card-title">{{ post.user.username }}</h5>
-                        <p>{{post.created_at}}</p>
+                    <h5 class="card-title">{{ post.title }}</h5>
+                    <div class="d-flex flex-row align-items-center justify-content-between mb-2">
+                        <a href="{% url 'profile' post.user.username %}">
+                            <div class="card-text d-flex flex-row align-items-center">
+                                <div class="avatar-container">
+                                    <img src="{{ post.user.thumbnail.url }}" style="width: 50px; height: 50px;">
+                                </div>
+                                <div class="px-2">{{ post.user.username }}</div>
+
+                            </div>
+                        </a>
+                        <div>{{post.created_at}}</div>
                     </div>
                     {% if post.image %}
-                        <img src="{{ post.image.url }}" class="card-img-top" alt="Изображение поста">
+                    <img src="{{ post.image.url }}" class="card-img-top" alt="Изображение поста">
                     {% endif %}
-                    <p class="card-text" id="post1Text">
-                        {{post.description}}
-<!--                        <span class="collapse" id="collapsePost1">-->
-<!--              Полное описание поста 1, которое отображается при нажатии на "Читать дальше".-->
-<!--            </span>-->
-<!--                        <a href="#collapsePost1" class="btn btn-link" data-toggle="collapse" aria-expanded="false"-->
-<!--                           aria-controls="collapsePost1">Читать дальше</a>-->
+                     <p class="card-text mt-2">
+                        {% if post.description|length > 100 %}
+                            {{ post.description|slice:":100" }}
+                            <span class="collapse" id="collapsePost{{ forloop.counter }}">
+                                {{ post.description|slice:"100:" }}
+                            </span>
+                            <a href="#collapsePost{{ forloop.counter }}" class="btn-link" data-toggle="collapse" aria-expanded="false" aria-controls="collapsePost{{ forloop.counter }}">Далее</a>
+
+                        {% else %}
+                            {{ post.description }}
+                        {% endif %}
                     </p>
                 </div>
             </div>
