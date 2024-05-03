@@ -9,8 +9,6 @@ from django.shortcuts import (
     redirect,
 )
 
-from users.models import CustomUser
-
 from users.services import (
     register_user,
     login_user,
@@ -19,6 +17,9 @@ from users.services import (
     password_reset_request,
     password_reset_get,
     password_reset_post,
+    get_user,
+    profile_post,
+    send_mail_to_user, search_users,
 )
 
 
@@ -70,10 +71,9 @@ class LogoutView(LoginRequiredMixin, View):
 
 class EmailConfirmView(View):
     def get(self, request, url_hash):
-        user = CustomUser.objects.filter(url_hash=url_hash).first()
         confirm_email(
             request=request,
-            user=user,
+            url_hash=url_hash,
         )
         return redirect('index')
 
@@ -116,10 +116,9 @@ class PasswordResetRequestView(View):
 
 class PasswordResetView(View):
     def get(self, request, url_hash):
-        user = CustomUser.objects.filter(url_hash=url_hash).first()
         status = password_reset_get(
             request=request,
-            user=user,
+            url_hash=url_hash,
         )
         if status == 200:
             return render(
@@ -129,10 +128,9 @@ class PasswordResetView(View):
         return redirect('login')
 
     def post(self, request, url_hash, **kwargs):
-        user = CustomUser.objects.filter(url_hash=url_hash).first()
         status = password_reset_post(
             request=request,
-            user=user,
+            url_hash=url_hash,
         )
         if status == 200:
             return redirect('login')
@@ -143,14 +141,59 @@ class PasswordResetView(View):
         )
 
 
-class ProfileView(View):
+class ProfileView(LoginRequiredMixin, View):
     def get(self, request, username):
-        user_profile = CustomUser.objects.filter(username=username).first()
+        status, profile = get_user(
+            request=request,
+            username=username,
+        )
+        if status != 200:
+            return redirect('index')
         context = {
-            'user_profile': user_profile,
+            'profile': profile,
         }
         return render(
             request=request,
             template_name='profile.html',
+            context=context,
+        )
+
+    def post(self, request, username):
+        status = profile_post(
+            request=request,
+            username=username,
+        )
+        if status == 404:
+            return redirect('index')
+        return redirect('profile', username)
+
+
+class SendMailRequestView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        return render(
+            request=request,
+            template_name='send_mail_form.html',
+        )
+
+    def post(self, request, *args, **kwargs):
+        send_mail_to_user(
+            request=request,
+            user=request.user,
+            action='confirm_email',
+        )
+        return redirect('index')
+
+
+class SearchView(LoginRequiredMixin, View):
+    def get(self, request):
+        users = search_users(
+            request=request,
+        )
+        context = {
+            'users': users,
+        }
+        return render(
+            request=request,
+            template_name='search_results.html',
             context=context,
         )
