@@ -9,7 +9,7 @@ from django.views import View
 
 from posts.services import (
     update_or_create_post,
-    find_post,
+    get_post,
     delete_post,
 )
 
@@ -38,7 +38,7 @@ class CreatePostView(LoginRequiredMixin, View):
 
 class DetailPostView(LoginRequiredMixin, View):
     def get(self, request, slug):
-        status, post = find_post(
+        status, post = get_post(
             request=request,
             slug=slug,
         )
@@ -56,7 +56,7 @@ class DetailPostView(LoginRequiredMixin, View):
 
 class UpdatePostView(LoginRequiredMixin, View):
     def get(self, request, slug):
-        status, post = find_post(
+        status, post = get_post(
             request=request,
             slug=slug,
         )
@@ -78,15 +78,12 @@ class UpdatePostView(LoginRequiredMixin, View):
         )
         if status == 200:
             return redirect('detail_post', post.slug)
-        return render(
-            request=request,
-            template_name='update_post.html',
-        )
+        return redirect('update_post', slug)
 
 
 class DeletePostView(LoginRequiredMixin, View):
-    def get(self, request, slug):
-        status, post = find_post(
+    def post(self, request, slug):
+        status, post = get_post(
             request=request,
             slug=slug,
         )
