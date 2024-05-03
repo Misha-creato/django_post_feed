@@ -2,16 +2,17 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views import View
 
-from posts.models import Post
+from index.services import get_posts
 
 
 class IndexView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        posts = Post.objects.all()
+        status, posts = get_posts()
         context = {
             'posts': posts,
         }
         return render(
+            status=status,
             request=request,
             template_name='index.html',
             context=context,
