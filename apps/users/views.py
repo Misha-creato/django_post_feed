@@ -19,7 +19,7 @@ from users.services import (
     password_reset_post,
     get_user,
     profile_post,
-    send_mail_to_user, search_users,
+    send_mail_to_user,
 )
 
 
@@ -170,6 +170,8 @@ class ProfileView(LoginRequiredMixin, View):
 
 class SendMailRequestView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
+        if request.user.email_confirmed:
+            return redirect('index')
         return render(
             request=request,
             template_name='send_mail_form.html',
@@ -182,18 +184,3 @@ class SendMailRequestView(LoginRequiredMixin, View):
             action='confirm_email',
         )
         return redirect('index')
-
-
-class SearchView(LoginRequiredMixin, View):
-    def get(self, request):
-        users = search_users(
-            request=request,
-        )
-        context = {
-            'users': users,
-        }
-        return render(
-            request=request,
-            template_name='search_results.html',
-            context=context,
-        )
