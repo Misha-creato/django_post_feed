@@ -14,6 +14,7 @@ from django.contrib.auth.forms import (
 )
 
 from django.core.mail import send_mail
+from django.db.models import Prefetch, Q
 from django.urls import reverse
 from django.db.utils import IntegrityError
 
@@ -21,6 +22,7 @@ from config.settings import (
     EMAIL_HOST_USER,
     SEND_EMAILS,
 )
+from posts.models import Post
 
 from users import check
 from users.models import CustomUser
@@ -56,7 +58,7 @@ def create_and_return_user(request, data) -> (int, CustomUser):
 
 
 def send_mail_to_user(request, user, action):
-    url_hash = get_user_url_hash(user=user)
+    url_hash = set_user_url_hash(user=user)
     url = request.build_absolute_uri(reverse(action, args=(url_hash,)))
 
     with open(f'{CUR_DIR}/mail_messages/{action}.json') as file:
@@ -65,23 +67,23 @@ def send_mail_to_user(request, user, action):
     subject = data['subject']
     message = data['message'].format(url=url)
 
-    if SEND_EMAILS:
-        try:
-            send_mail(subject, message, EMAIL_HOST_USER, [user.email])
-            messages.success(
-                request=request,
-                message=data['send_success'],
-            )
-            user.mail_sent = True
-            user.save()
-        except Exception as exc:
-            print(f'Произошла ошибка при отправке письма пользователю {exc}')
-            messages.warning(
-                request=request,
-                message=data['send_failed'],
-            )
-    else:
+    if not SEND_EMAILS:
         print('Отправка писем отключена')
+        return 203
+    try:
+        send_mail(subject, message, EMAIL_HOST_USER, [user.email])
+        messages.success(
+            request=request,
+            message=data['send_success'],
+        )
+    except Exception as exc:
+        print(f'Произошла ошибка при отправке письма пользователю {exc}')
+        messages.warning(
+            request=request,
+            message=data['send_failed'],
+        )
+        return 202
+    return 200
 
 
 def is_user_logged_in(request, data) -> int:
@@ -90,17 +92,17 @@ def is_user_logged_in(request, data) -> int:
         username=data['email'],
         password=data['password'],
     )
-    if user is not None:
-        login(
+    if user is None:
+        messages.error(
             request=request,
-            user=user,
+            message='Неправильные адрес электронной почты или пароль',
         )
-        return 200
-    messages.error(
+        return 401
+    login(
         request=request,
-        message='Неправильные адрес электронной почты или пароль',
+        user=user,
     )
-    return 401
+    return 200
 
 
 def set_form_error_messages(request, form):
@@ -112,7 +114,7 @@ def set_form_error_messages(request, form):
             )
 
 
-def get_user_url_hash(user):
+def set_user_url_hash(user):
     url_hash = str(uuid.uuid4())
     user.url_hash = url_hash
     user.save()
@@ -133,11 +135,14 @@ def register_user(request) -> int:
         data=data,
     )
     if status == 200:
-        send_mail_to_user(
+        email_send_status = send_mail_to_user(
             request=request,
             user=user,
             action='confirm_email',
         )
+        if email_send_status == 200:
+            user.mail_sent = True
+            user.save()
     return status
 
 
@@ -163,21 +168,20 @@ def confirm_email(request, url_hash) -> int:
             message='Возникла ошибка на стороне сервера',
         )
         return 500
-    else:
-        if user is None:
-            messages.error(
-                request=request,
-                message='Неверный токен',
-            )
-            return 404
-        user.email_confirmed = True
-        user.url_hash = None
-        user.save()
-        messages.success(
+    if user is None:
+        messages.error(
             request=request,
-            message='Адрес электронной почты успешно подтвержден',
+            message='Неверный токен',
         )
-        return 200
+        return 404
+    user.email_confirmed = True
+    user.url_hash = None
+    user.save()
+    messages.success(
+        request=request,
+        message='Адрес электронной почты успешно подтвержден',
+    )
+    return 200
 
 
 def settings_user(request) -> int:
@@ -221,19 +225,18 @@ def password_reset_request(request) -> int:
             message='Возникла ошибка на стороне сервера',
         )
         return 500
-    else:
-        if user is None:
-            messages.error(
-                request=request,
-                message=f'Пользователь с адресом электронной почты {email} не найден',
-            )
-            return 404
-        send_mail_to_user(
+    if user is None:
+        messages.error(
             request=request,
-            user=user,
-            action='password_reset',
+            message=f'Пользователь с адресом электронной почты {email} не найден',
         )
-        return 200
+        return 404
+    send_mail_to_user(
+        request=request,
+        user=user,
+        action='password_reset',
+    )
+    return 200
 
 
 def password_reset_get(request, url_hash) -> int:
@@ -291,7 +294,9 @@ def password_reset_post(request, url_hash):
 def get_user(request, username) -> (int, CustomUser):
     try:
         user = (CustomUser.objects.filter(username=username).
-                prefetch_related('posts').first())
+                prefetch_related(Prefetch('posts',
+                                          queryset=Post.objects.filter(~Q(hide_from_users=request.user)))).
+                first())
     except Exception as exc:
         print(f'Возникла ошибка на стороне сервера {exc}')
         return 500, None
@@ -319,10 +324,10 @@ def profile_post(request, username) -> (int, CustomUser):
             message='Логин является обязательным полем',
         )
         return 400
+    user.avatar = files.get('avatar', user.avatar)
+    user.username = data.get('username', user.username)
+    user.profile_description = data.get('profile_description', user.profile_description)
     try:
-        user.avatar = files.get('avatar', user.avatar)
-        user.username = data.get('username', user.username)
-        user.profile_description = data.get('profile_description', user.profile_description)
         user.save()
         messages.success(
             request=request,
@@ -339,13 +344,4 @@ def profile_post(request, username) -> (int, CustomUser):
         print(f'Возникла ошибка при обновлении профиля {exc}')
     return 400
 
-
-def search_users(request):
-    query = request.GET.get('search')
-    try:
-        users = CustomUser.objects.filter(username__icontains=query)
-        return users
-    except Exception as exc:
-        print(exc)
-        return None
 
