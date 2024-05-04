@@ -7,7 +7,9 @@ from index.services import get_posts
 
 class IndexView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        status, posts = get_posts()
+        status, posts = get_posts(
+            request=request,
+        )
         context = {
             'posts': posts,
         }
