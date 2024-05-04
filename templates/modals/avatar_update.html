@@ -1,0 +1,19 @@
+
+<div id="avatarUpdateModal" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактирование аватара</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Форма для загрузки нового аватара -->
+                <form method="POST" action="{% url 'profile' user.username %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="file" name="avatar">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

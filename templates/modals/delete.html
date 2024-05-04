@@ -1,0 +1,24 @@
+
+<div class="modal" id="deleteModal{{post.id}}">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Подтверждение удаления</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Вы уверены, что хотите удалить этот пост?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+          <form action="{% url 'delete_post' post.slug %}" method="post">
+              {% csrf_token %}
+            <button type="submit" class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
+
+          </form>
+      </div>
+    </div>
+  </div>
+</div>
