@@ -9,7 +9,7 @@ from users.views import (
     PasswordResetRequestView,
     PasswordResetView,
     ProfileView,
-    SendMailRequestView, SearchView,
+    SendMailRequestView,
 )
 
 
@@ -58,11 +58,6 @@ urlpatterns = [
         'send_mail/',
         SendMailRequestView.as_view(),
         name='send_mail',
-    ),
-    path(
-        'search/',
-        SearchView.as_view(),
-        name='search',
     ),
 ]
 
