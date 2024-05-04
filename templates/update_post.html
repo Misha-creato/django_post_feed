@@ -8,7 +8,6 @@
             <h2>Редактировать пост</h2>
             <form id="postForm" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
-                <input type="hidden" name="slug" value="{{post.slug}}">
                 <div class="form-group">
                     <label for="postTitle">Заголовок *</label>
                     <input type="text" class="form-control" id="postTitle" name="title" value="{{post.title}}" required>
@@ -23,7 +22,9 @@
                     {% if post.image %}
                     <img class="w-50 d-block mb-2" src="{{post.image.url}}">
                     {% endif %}
-                    <input type="file" class="form-control-file" id="postImage" name="image">
+                    <input type="file" class="form-control-file" id="postImage" name="image"
+                           {% if post.image %} value="{{post.image}}" {% endif %}
+                    >
                 </div>
                 <button type="submit" class="btn btn-primary">Сохранить</button>
             </form>
