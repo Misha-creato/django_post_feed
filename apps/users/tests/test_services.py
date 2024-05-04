@@ -134,6 +134,8 @@ class ServiceTests(TestCase):
             self.assertEqual(status_code, code, msg=fixture)
 
     def test_confirm_email(self):
+        response = self.client.get(path='/')
+        request = response.wsgi_request
         path = f'{self.path}/confirm_email'
         fixtures = (
             (200, 'valid',),
@@ -144,9 +146,6 @@ class ServiceTests(TestCase):
             fixture = f'{code}_{name}'
             with open(f'{path}/{fixture}_request.json') as file:
                 url_hash = json.load(file)
-
-            response = self.client.get(path='/')
-            request = response.wsgi_request
 
             status_code = confirm_email(
                 request=request,
@@ -164,15 +163,15 @@ class ServiceTests(TestCase):
             (200, 'valid',),
         )
 
+        self.client.login(
+            email='test1@example.com',
+            password='password123',
+        )
+
         for code, name in fixtures:
             fixture = f'{code}_{name}'
             with open(f'{path}/{fixture}_request.json') as file:
                 data = json.load(file)
-
-            self.client.login(
-                email='test1@example.com',
-                password='password123',
-            )
 
             response = self.client.post(
                 path='/',
@@ -217,6 +216,8 @@ class ServiceTests(TestCase):
 
     def test_password_reset_get(self):
         path = f'{self.path}/password_reset_get'
+        response = self.client.get(path='/')
+        request = response.wsgi_request
 
         fixtures = (
             (200, 'valid',),
@@ -227,10 +228,6 @@ class ServiceTests(TestCase):
             fixture = f'{code}_{name}'
             with open(f'{path}/{fixture}_request.json') as file:
                 url_hash = json.load(file)
-
-            response = self.client.get(path='/')
-
-            request = response.wsgi_request
 
             status_code = password_reset_get(
                 request=request,
@@ -270,6 +267,8 @@ class ServiceTests(TestCase):
 
     def test_get_user(self):
         path = f'{self.path}/get_user'
+        response = self.client.get(path='/')
+        request = response.wsgi_request
 
         fixtures = (
             (200, 'valid',),
@@ -280,10 +279,6 @@ class ServiceTests(TestCase):
             fixture = f'{code}_{name}'
             with open(f'{path}/{fixture}_request.json') as file:
                 username = json.load(file)
-
-            response = self.client.get(path='/')
-
-            request = response.wsgi_request
 
             status_code, user = get_user(
                 request=request,
