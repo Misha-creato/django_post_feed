@@ -43,6 +43,10 @@ class Post(models.Model):
         verbose_name='URL',
         blank=True,
     )
+    hide = models.BooleanField(
+        default=False,
+        verbose_name='Скрыт'
+    )
 
     def save(self, *args, **kwargs):
         if not self.image:
@@ -51,7 +55,7 @@ class Post(models.Model):
                 self.image = post.image
         slug_title = slugify(self.title)
         hash_id = hashlib.sha256(str(self.id).encode()).hexdigest()[:12]
-        self.slug = f'{slug_title}#{hash_id}'
+        self.slug = f'{slug_title}-{hash_id}'
 
         super().save(*args, **kwargs)
 

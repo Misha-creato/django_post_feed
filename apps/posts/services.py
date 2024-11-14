@@ -25,6 +25,7 @@ def update_or_create_post(request, action, slug=None) -> (int, Post):
                 'image': files.get('image'),
                 'title': data['title'],
                 'description': data['description'],
+                'hide': bool(data.get('hide')),
             },
         )[0]
         messages.success(
