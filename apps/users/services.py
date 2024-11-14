@@ -32,7 +32,6 @@ from users.forms import (
     PasswordResetRequestForm,
 )
 
-
 CUR_DIR = os.path.dirname(__file__)
 
 
@@ -295,7 +294,9 @@ def get_user(request, username) -> (int, CustomUser):
     try:
         user = (CustomUser.objects.filter(username=username).
                 prefetch_related(Prefetch('posts',
-                                          queryset=Post.objects.filter(~Q(hide_from_users=request.user)))).
+                                          queryset=Post.objects.filter(
+                                              ((~Q(hide_from_users=request.user) & Q(hide=False)) | Q(user=request.user))
+                                          ))).
                 first())
     except Exception as exc:
         print(f'Возникла ошибка на стороне сервера {exc}')
@@ -343,5 +344,3 @@ def profile_post(request, username) -> (int, CustomUser):
     except Exception as exc:
         print(f'Возникла ошибка при обновлении профиля {exc}')
     return 400
-
-
