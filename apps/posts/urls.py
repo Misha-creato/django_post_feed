@@ -5,7 +5,8 @@ from posts.views import (
     DetailPostView,
     UpdatePostView,
     DeletePostView,
-    SearchView, HidePostView,
+    SearchView,
+    HidePostView,
 )
 
 
